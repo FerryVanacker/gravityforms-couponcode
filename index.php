@@ -1,6 +1,6 @@
 <?php
 /*
-    Plugin Name: GP Couponcodes Generator
+    Plugin Name: Gravity Forms Couponcodes Generator
     Plugin URI: https://support.conversiepartners.nl/
     Description: Generate coupon codes into Gravity Forms, easy install with Settings-tab
     Author: Conversie Partners
