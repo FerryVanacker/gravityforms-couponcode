@@ -78,6 +78,7 @@ add_action('gform_loaded', function() {
             return array(
                 array(
                     'title'  => esc_html__('Coupon Codes Settings', 'gf_couponcodes'),
+                    'description' => esc_html__('Configure the settings for generating coupon codes. You can select the form, specify the source field, and set the discount parameters.', 'gf_couponcodes'),
                     'fields' => array(
                         array(
                             'label'   => esc_html__('Form', 'gf_couponcodes'),
