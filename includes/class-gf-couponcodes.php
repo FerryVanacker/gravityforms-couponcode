@@ -1,16 +1,5 @@
 <?php
-/*
-    Plugin Name: Gravity Forms Couponcodes Generator
-    Plugin URI: https://support.conversiepartners.nl/
-    Description: Generate coupon codes into Gravity Forms, easy install with Settings-tab
-    Author: Conversie Partners
-    Author URI: https://www.conversiepartners.nl/
-    Version: 2.1
-    GitHub Plugin URI: https://github.com/FerryVanacker/gravityforms-couponcode
- */
-
-add_action('gform_loaded', function() {
-    GFForms::include_addon_framework();
+if (!class_exists('GFCouponCodesAddOn')) {
     class GFCouponCodesAddOn extends GFAddOn {
         protected $_version = '2.1';
         protected $_min_gravityforms_version = '1.9';
@@ -45,34 +34,56 @@ add_action('gform_loaded', function() {
             $email_field_id = rgar($settings, 'email_field_id');
             $coupon_code = rgar($entry, $source_field_id);
             $email = rgar($entry, $email_field_id);
-            $amount = rgar($settings, 'discount_amount');
-            $type = rgar($settings, 'discount_type');
 
-            // Check if the code is already used
             if ($this->is_coupon_code_used($coupon_code)) {
+                error_log('Coupon Code Error: The coupon code is already used.');
                 return;
             }
 
-            $this->store_coupon_code($coupon_code, $email);
+            $result = $this->store_coupon_code($coupon_code, $email);
+
+            if (is_wp_error($result)) {
+                error_log('Coupon Code Error: ' . $result->get_error_message());
+            } else {
+                $this->increment_usage_count($coupon_code);
+            }
         }
 
         public function is_coupon_code_used($code) {
             global $wpdb;
 
             $table = $wpdb->prefix . 'coupon_codes';
-            $result = $wpdb->get_var($wpdb->prepare(
+            $result = $wpdb->get_row($wpdb->prepare(
                 "SELECT used FROM $table WHERE code = %s",
                 $code
             ));
 
-            return !empty($result);
+            return !empty($result) && $result->used;
         }
 
         public function store_coupon_code($code, $email) {
             global $wpdb;
 
+            if (!$this->validate_coupon_code($code)) {
+                return new WP_Error('invalid_code', 'Invalid coupon code.');
+            }
+
             $table = $wpdb->prefix . 'coupon_codes';
             $wpdb->insert($table, array('code' => $code, 'email' => $email, 'used' => 0));
+        }
+
+        public function validate_coupon_code($code) {
+            return preg_match('/^[A-Za-z0-9]{10}$/', $code);
+        }
+
+        public function increment_usage_count($code) {
+            global $wpdb;
+
+            $table = $wpdb->prefix . 'coupon_codes';
+            $wpdb->query($wpdb->prepare(
+                "UPDATE $table SET usage_count = usage_count + 1 WHERE code = %s",
+                $code
+            ));
         }
 
         public function plugin_settings_fields() {
@@ -161,63 +172,4 @@ add_action('gform_loaded', function() {
             return $choices;
         }
     }
-
-    GFCouponCodesAddOn::get_instance();
-});
-
-/**
- * Generate the random codes to be used for the discounts
- */
-add_filter('gform_field_value_uuid', 'gw_generate_unique_code');
-function gw_generate_unique_code() {
-    $settings = GFCouponCodesAddOn::get_instance()->get_plugin_settings();
-    $length = rgar($settings, 'code_length', 19);
-    $prefix = rgar($settings, 'prefix', '');
-    $suffix = rgar($settings, 'suffix', '');
-    $available_length = $length - strlen($prefix) - strlen($suffix);
-    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-
-    do {
-        $unique = $prefix . substr(str_shuffle(str_repeat($chars, $available_length)), 0, $available_length) . $suffix;
-    } while (!gw_check_unique_code($unique));
-
-    return $unique;
 }
-
-/**
- * Checks to make sure the code generated is unique (not already in use)
- */
-function gw_check_unique_code($unique) {
-    global $wpdb;
-
-    $table = $wpdb->prefix . 'coupon_codes';
-    $result = $wpdb->get_var($wpdb->prepare(
-        "SELECT code FROM $table WHERE code = %s",
-        $unique
-    ));
-
-    return empty($result);
-}
-
-/**
- * Create the coupon codes table on plugin activation
- */
-register_activation_hook(__FILE__, 'create_coupon_codes_table');
-function create_coupon_codes_table() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'coupon_codes';
-    $charset_collate = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE $table_name (
-        id mediumint(9) NOT NULL AUTO_INCREMENT,
-        code varchar(255) NOT NULL,
-        email varchar(255) NOT NULL,
-        used tinyint(1) DEFAULT 0 NOT NULL,
-        PRIMARY KEY  (id),
-        UNIQUE KEY code (code)
-    ) $charset_collate;";
-
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
-}
-?>
