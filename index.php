@@ -6,6 +6,7 @@
     Author: Conversie Partners
     Author URI: https://www.conversiepartners.nl/
     Version: 2.1
+    GitHub Plugin URI: https://github.com/FerryVanacker/gravityforms-couponcode
  */
 
 add_action('gform_loaded', function() {
