@@ -2,7 +2,7 @@
 /*
     Plugin Name: GP Couponcodes Generator
     Plugin URI: https://support.conversiepartners.nl/
-    Description: Genereren van kortingscodes tbv Restaurant Pieterman
+    Description: Generate coupon codes into Gravity Forms, easy install with Settings-tab
     Author: Conversie Partners
     Author URI: https://www.conversiepartners.nl/
     Version: 2.0
