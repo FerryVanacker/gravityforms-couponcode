@@ -5,13 +5,13 @@
     Description: Generate coupon codes into Gravity Forms, easy install with Settings-tab
     Author: Conversie Partners
     Author URI: https://www.conversiepartners.nl/
-    Version: 2.0
+    Version: 2.1
  */
 
 add_action('gform_loaded', function() {
     GFForms::include_addon_framework();
     class GFCouponCodesAddOn extends GFAddOn {
-        protected $_version = '2.0';
+        protected $_version = '2.1';
         protected $_min_gravityforms_version = '1.9';
         protected $_slug = 'gf_couponcodes';
         protected $_path = __FILE__;
@@ -47,7 +47,7 @@ add_action('gform_loaded', function() {
             $amount = rgar($settings, 'discount_amount');
             $type = rgar($settings, 'discount_type');
 
-            // Controleer of de code al is gebruikt
+            // Check if the code is already used
             if ($this->is_coupon_code_used($coupon_code)) {
                 return;
             }
@@ -128,6 +128,18 @@ add_action('gform_loaded', function() {
                                 ),
                             ),
                         ),
+                        array(
+                            'label'   => esc_html__('Prefix (Optional)', 'gf_couponcodes'),
+                            'type'    => 'text',
+                            'name'    => 'prefix',
+                            'tooltip' => esc_html__('Enter the prefix for the coupon code.', 'gf_couponcodes'),
+                        ),
+                        array(
+                            'label'   => esc_html__('Suffix (Optional)', 'gf_couponcodes'),
+                            'type'    => 'text',
+                            'name'    => 'suffix',
+                            'tooltip' => esc_html__('Enter the suffix for the coupon code.', 'gf_couponcodes'),
+                        ),
                     ),
                 ),
             );
@@ -158,11 +170,13 @@ add_filter('gform_field_value_uuid', 'gw_generate_unique_code');
 function gw_generate_unique_code() {
     $settings = GFCouponCodesAddOn::get_instance()->get_plugin_settings();
     $length = rgar($settings, 'code_length', 19);
-    $chars = ENGWP_CODE_CHARS;
-    $prefix = ENGWP_CODE_PREFIX;
+    $prefix = rgar($settings, 'prefix', '');
+    $suffix = rgar($settings, 'suffix', '');
+    $available_length = $length - strlen($prefix) - strlen($suffix);
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
     do {
-        $unique = $prefix . substr(str_shuffle(str_repeat($chars, $length)), 0, $length);
+        $unique = $prefix . substr(str_shuffle(str_repeat($chars, $available_length)), 0, $available_length) . $suffix;
     } while (!gw_check_unique_code($unique));
 
     return $unique;
