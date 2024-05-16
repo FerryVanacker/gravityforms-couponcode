@@ -1,4 +1,4 @@
-# GP Couponcodes Generator
+# Gravity Forms Couponcodes Generator
 
 ## Description
 The **GP Couponcodes Generator** plugin for WordPress allows you to easily generate coupon codes within Gravity Forms. With an intuitive settings tab, you can quickly configure the plugin and link it to the desired form fields.
